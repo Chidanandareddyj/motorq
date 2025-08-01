@@ -5,27 +5,31 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Gauge, gaugeClasses } from '@mui/x-charts/Gauge';
 import { PieChart } from '@mui/x-charts/PieChart';
+import { toast } from "sonner";
 
-interface ParkingSlot {
+type SlotStatus = 'available' | 'occupied' | 'maintenance';
+type VehicleType = 'car' | 'bike' | 'ev' | 'handicap';
+
+interface Slot {
   id: string;
   slot_number: string;
-  slot_type: string;
-  status: string;
+  slot_type: VehicleType;
+  status: SlotStatus;
   floor?: string;
   section?: string;
 }
 
-interface DashboardData {
+interface Stats {
   totalSlots: number;
   availableSlots: number;
   occupiedSlots: number;
   maintenanceSlots: number;
-  slots: ParkingSlot[];
-  occupiedSlotsData: any[];
+  slots: Slot[];
+  occupiedSlotsData?: any[];
 }
 
 const Dashboard = () => {
-  const [data, setData] = React.useState<DashboardData | null>(null);
+  const [data, setData] = React.useState<Stats | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [selectedType, setSelectedType] = React.useState<string>("all");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
@@ -41,8 +45,8 @@ const Dashboard = () => {
       const response = await fetch(`/api/dashboard?${params.toString()}`);
       const dashboardData = await response.json();
       setData(dashboardData);
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+    } catch (err) {
+      toast.error('Failed to load dashboard');
     } finally {
       setLoading(false);
     }
@@ -67,20 +71,19 @@ const Dashboard = () => {
 
       if (response.ok) {
         fetchDashboardData();
-        alert(`Slot status updated to ${newStatus}`);
+        toast.success(`Slot marked as ${newStatus}`);
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error}`);
+        toast.error(error.error || 'Failed to update slot');
       }
-    } catch (error) {
-      console.error("Error updating slot:", error);
-      alert("Failed to update slot status");
+    } catch {
+      toast.error('Network error occurred');
     }
   };
 
   const handleVehicleExit = async () => {
-    if (!exitNumberPlate) {
-      alert("Please enter a number plate");
+    if(!exitNumberPlate.trim()) {
+      toast.error('Number plate is required');
       return;
     }
 
@@ -97,21 +100,21 @@ const Dashboard = () => {
 
       const result = await response.json();
 
-      if (response.ok) {
-        alert(
-          `Vehicle ${exitNumberPlate} checked out successfully!\nDuration: ${result.billing.duration_hours} hour(s)\nAmount: $${result.billing.amount}`
+      if(response.ok) {
+        toast.success(
+          `${exitNumberPlate} checked out. Duration: ${result.billing.duration_hours}h, $${result.billing.amount}`
         );
         setExitNumberPlate("");
         fetchDashboardData(); 
       } else {
-        alert(`Error: ${result.error}`);
+        toast.error(result.error || 'Checkout failed');
       }
-    } catch (error) {
-      console.error("Error during checkout:", error);
-      alert("Failed to checkout vehicle");
+    } catch(error) {
+      toast.error('Network error during checkout');
     }
   };
 
+  // Loading state - probably should be a spinner component
   if (loading) {
     return (
       <div className="p-6">
@@ -131,8 +134,6 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="p-6 space-y-6">
         <h1 className="text-3xl font-bold">Parking Dashboard</h1>
-
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
@@ -195,7 +196,7 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Controls */}
+      {/* Controls section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
@@ -249,8 +250,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Search Results */}
       {searchQuery &&
         data?.occupiedSlotsData &&
         data.occupiedSlotsData.length > 0 && (
@@ -283,7 +282,6 @@ const Dashboard = () => {
           </Card>
         )}
 
-      {/* Slots Grid */}
       <Card>
         <CardHeader>
           <CardTitle>Parking Slots</CardTitle>
@@ -324,8 +322,6 @@ const Dashboard = () => {
                 >
                   {slot.status.toUpperCase()}
                 </div>
-
-                {/* Maintenance Toggle */}
                 {slot.status !== "occupied" && (
                   <div className="mt-2 space-y-1">
                     {slot.status === "available" && (

@@ -10,19 +10,19 @@ export async function GET(request: Request) {
         // Build query based on filters
         let query = supabase.from('parking_slots').select('*');
         
-        if (slotType && slotType !== 'all') {
+        if(slotType && slotType !== 'all') {
             query = query.eq('slot_type', slotType);
         }
 
         const { data: slots, error: slotsError } = await query;
         
-        if (slotsError) {
+        if(slotsError) {
             return NextResponse.json({ error: slotsError.message }, { status: 500 });
         }
 
         // Get occupied slots with vehicle info if search is provided
         let occupiedSlotsData = [];
-        if (search) {
+        if(search) {
             const { data: sessions, error: sessionsError } = await supabase
                 .from('parking_sessions')
                 .select(`
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
                 .eq('status', 'active')
                 .ilike('vehicles.number_plate', `%${search}%`);
             
-            if (!sessionsError) {
+            if(!sessionsError) {
                 occupiedSlotsData = sessions;
             }
         }

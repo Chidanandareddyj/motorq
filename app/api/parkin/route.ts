@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 // Slot assignment logic based on vehicle type
 const getCompatibleSlotTypes = (vehicleType: string): string[] => {
-    switch (vehicleType) {
+    switch(vehicleType) {
         case 'car':
             return ['regular', 'compact'];
         case 'bike':
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const action = searchParams.get('action');
 
-        if (action === 'available-slots') {
+        if(action === 'available-slots') {
             // Return available slots for manual assignment
             const { data: slots, error } = await supabase
                 .from('parking_slots')
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
                 .eq('status', 'available')
                 .order('slot_number');
 
-            if (error) {
+            if(error) {
                 return NextResponse.json({ error: error.message }, { status: 500 });
             }
 
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
         }
 
         return NextResponse.json({ error: "Invalid action parameter" }, { status: 400 });
-    } catch (error) {
+    } catch(error) {
         console.error("GET parkin error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
@@ -50,12 +50,12 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { numberPlate, vehicleType, manualSlotId } = body;
 
-        if (!numberPlate || !vehicleType) {
+        if(!numberPlate || !vehicleType) {
             return NextResponse.json({ error: "Number plate and vehicle type are required" }, { status: 400 });
         }
 
         // Validate vehicle type
-        if (!['car', 'bike', 'ev', 'handicap'].includes(vehicleType)) {
+        if(!['car', 'bike', 'ev', 'handicap'].includes(vehicleType)) {
             return NextResponse.json({ error: "Invalid vehicle type" }, { status: 400 });
         }
 
@@ -67,13 +67,13 @@ export async function POST(request: Request) {
             .eq('number_plate', numberPlate)
             .single();
 
-        if (vehicleCheckError && vehicleCheckError.code !== 'PGRST116') {
+        if(vehicleCheckError && vehicleCheckError.code !== 'PGRST116') {
             // If error is NOT "no rows returned", it's a real error
             return NextResponse.json({ error: `Error checking vehicle: ${vehicleCheckError.message}` }, { status: 500 });
         }
 
         // If vehicle exists, check for active sessions
-        if (vehicleRecord) {
+        if(vehicleRecord) {
             const { data: existingSession, error: sessionCheckError } = await supabase
                 .from('parking_sessions')
                 .select('id')
@@ -81,11 +81,11 @@ export async function POST(request: Request) {
                 .eq('vehicle_id', vehicleRecord.id)
                 .single();
 
-            if (sessionCheckError && sessionCheckError.code !== 'PGRST116') {
+            if(sessionCheckError && sessionCheckError.code !== 'PGRST116') {
                 return NextResponse.json({ error: `Error checking existing sessions: ${sessionCheckError.message}` }, { status: 500 });
             }
 
-            if (existingSession) {
+            if(existingSession) {
                 return NextResponse.json({ error: "Vehicle already has an active parking session" }, { status: 400 });
             }
         }

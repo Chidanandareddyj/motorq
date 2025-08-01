@@ -3,6 +3,7 @@ import React from 'react'
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { toast } from "sonner";
 
 const ExitForm = () => {
     const [numberPlate, setNumberPlate] = React.useState("");
@@ -10,8 +11,8 @@ const ExitForm = () => {
 
     const handleExit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!numberPlate) {
-            alert("Please enter a number plate");
+        if(!numberPlate.trim()) {
+            toast.error('License plate required');
             return;
         }
 
@@ -20,25 +21,22 @@ const ExitForm = () => {
         try {
             const response = await fetch("/api/parkout", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    numberPlate: numberPlate.toUpperCase()
-                }),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ numberPlate: numberPlate.toUpperCase() }),
             });
 
             const data = await response.json();
             
-            if (data.error) {
-                alert(data.error);
+            if(data.error) {
+                toast.error(data.error);
             } else {
-                alert(`Vehicle ${numberPlate} exited successfully!\n\nDetails:\nDuration: ${data.billing.duration_hours} hour(s)\nAmount: $${data.billing.amount}\nSlot: ${data.session.parking_slots.slot_number}`);
+                const billing = data.billing;
+                const slot = data.session.parking_slots;
+                toast.success(`Exit processed: ${billing.duration_hours}h parking, $${billing.amount} charged. Slot ${slot.slot_number} now available.`);
                 setNumberPlate("");
             }
-        } catch (error) {
-            console.error("Error exiting vehicle:", error);
-            alert("Failed to exit vehicle. Please try again.");
+        } catch {
+            toast.error('Connection failed. Try again.');
         } finally {
             setLoading(false);
         }
@@ -53,7 +51,7 @@ const ExitForm = () => {
                 <form onSubmit={handleExit} className="space-y-4">
                     <div>
                         <label htmlFor="exitNumberPlate" className="block text-sm font-medium text-gray-700 mb-1">
-                            Number Plate *
+                            License Plate *
                         </label>
                         <Input 
                             type="text" 
@@ -61,8 +59,9 @@ const ExitForm = () => {
                             id="exitNumberPlate" 
                             value={numberPlate} 
                             onChange={(e) => setNumberPlate(e.target.value.toUpperCase())} 
-                            placeholder="Enter number plate to exit" 
+                            placeholder="Enter license plate" 
                             required
+                            disabled={loading}
                             className="w-full"
                         />
                     </div>
@@ -74,16 +73,18 @@ const ExitForm = () => {
                             className="flex-1"
                             variant="destructive"
                         >
-                            {loading ? "Processing..." : "Exit Vehicle"}
+                            {loading ? "Processing..." : "Process Exit"}
                         </Button>
                         <Button 
                             type="button" 
                             variant="outline"
-                            onClick={() => setNumberPlate("")}
+                            onClick={() => {
+                                setNumberPlate("");
+                            }}
                             disabled={loading}
                             className="flex-1"
                         >
-                            Reset
+                            Clear
                         </Button>
                     </div>
                 </form>

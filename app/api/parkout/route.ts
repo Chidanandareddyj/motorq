@@ -6,7 +6,7 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { numberPlate, sessionId } = body;
 
-        if (!numberPlate && !sessionId) {
+        if(!numberPlate && !sessionId) {
             return NextResponse.json({ error: "Number plate or session ID is required" }, { status: 400 });
         }
 
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
             `)
             .eq('status', 'active');
 
-        if (sessionId) {
+        if(sessionId) {
             query = query.eq('id', sessionId);
         } else {
             query = query.eq('vehicles.number_plate', numberPlate);
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 
         const { data: session, error: sessionError } = await query.single();
 
-        if (sessionError || !session) {
+        if(sessionError || !session) {
             return NextResponse.json({ error: "No active parking session found" }, { status: 404 });
         }
 

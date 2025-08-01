@@ -2,6 +2,7 @@
 import React from 'react'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from "sonner";
 
 interface ParkingSlot {
     id: string;
@@ -12,14 +13,13 @@ interface ParkingSlot {
     section?: string;
 }
 
-const vehicleform = () => {
+const VehicleRegistration = () => {
     const [numberPlate, setNumberPlate] = React.useState("");
     const [vehicleType, setVehicleType] = React.useState("");
     const [manualSlotId, setManualSlotId] = React.useState("");
     const [availableSlots, setAvailableSlots] = React.useState<ParkingSlot[]>([]);
     const [loading, setLoading] = React.useState(false);
 
-    // Fetch available slots when component mounts
     React.useEffect(() => {
         fetchAvailableSlots();
     }, []);
@@ -28,18 +28,16 @@ const vehicleform = () => {
         try {
             const response = await fetch("/api/parkin?action=available-slots");
             const data = await response.json();
-            if (data.slots) {
-                setAvailableSlots(data.slots);
-            }
-        } catch (error) {
-            console.error("Error fetching slots:", error);
+            if(data.slots) setAvailableSlots(data.slots);
+        } catch {
+            toast.error('Failed to fetch available slots');
         }
     };
 
-    const handlesubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!numberPlate || !vehicleType) {
-            alert("Please fill in all required fields");
+        if(!numberPlate || !vehicleType) {
+            toast.error('License plate and vehicle type required');
             return;
         }
 
@@ -48,9 +46,7 @@ const vehicleform = () => {
         try {
             const response = await fetch("/api/parkin", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     numberPlate: numberPlate.toUpperCase(),
                     vehicleType,
@@ -60,18 +56,20 @@ const vehicleform = () => {
 
             const data = await response.json();
             
-            if (data.error) {
-                alert(data.error);
+            if(data.error) {
+                toast.error(data.error);
             } else {
-                alert(`Vehicle parked successfully!\nSlot: ${data.slot.slot_number}\nType: ${data.slot.slot_type}${data.slot.floor ? `\nFloor: ${data.slot.floor}` : ''}${data.slot.section ? `\nSection: ${data.slot.section}` : ''}`);
+                const slot = data.slot;
+                toast.success(
+                    `Parked in slot ${slot.slot_number}${slot.floor ? ` (Floor ${slot.floor})` : ''}`
+                );
                 setNumberPlate("");
                 setVehicleType("");
                 setManualSlotId("");
-                fetchAvailableSlots(); // Refresh available slots
+                fetchAvailableSlots(); // refresh available slots
             }
-        } catch (error) {
-            console.error("Error parking vehicle:", error);
-            alert("Failed to park vehicle. Please try again.");
+        } catch {
+            toast.error('Network error. Please retry.');
         } finally {
             setLoading(false);
         }
@@ -79,11 +77,12 @@ const vehicleform = () => {
 
     return (
         <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold mb-6 text-center">Vehicle Entry</h2>
-            <form onSubmit={handlesubmit} className="space-y-4">
+            <h2 className="text-2xl font-bold mb-6 text-center">Vehicle Registration</h2>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label htmlFor="numberPlate" className="block text-sm font-medium text-gray-700 mb-1">
-                        Number Plate *
+                        License Plate *
                     </label>
                     <Input 
                         type="text" 
@@ -91,8 +90,9 @@ const vehicleform = () => {
                         id="numberPlate" 
                         value={numberPlate} 
                         onChange={(e) => setNumberPlate(e.target.value.toUpperCase())} 
-                        placeholder="Enter number plate" 
+                        placeholder="ABC-1234" 
                         required
+                        disabled={loading}
                         className="w-full"
                     />
                 </div>
@@ -107,33 +107,35 @@ const vehicleform = () => {
                         value={vehicleType} 
                         onChange={(e) => setVehicleType(e.target.value)}
                         required
+                        disabled={loading}
                         className="w-full h-9 px-3 py-1 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
-                        <option value="">Select Vehicle Type</option>
+                        <option value="">Choose type</option>
                         <option value="car">Car</option>
-                        <option value="bike">Bike</option>
+                        <option value="bike">Motorcycle</option>
                         <option value="ev">Electric Vehicle</option>
-                        <option value="handicap">Handicap Accessible</option>
+                        <option value="handicap">Accessible</option>
                     </select>
                 </div>
 
                 <div>
                     <label htmlFor="manualSlotId" className="block text-sm font-medium text-gray-700 mb-1">
-                        Manual Slot Override (Optional)
+                        Preferred Slot (Optional)
                     </label>
                     <select 
                         name="manualSlotId" 
                         id="manualSlotId" 
                         value={manualSlotId} 
                         onChange={(e) => setManualSlotId(e.target.value)}
+                        disabled={loading}
                         className="w-full h-9 px-3 py-1 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
-                        <option value="">Auto-assign slot</option>
+                        <option value="">Auto-assign</option>
                         {availableSlots.map((slot) => (
                             <option key={slot.id} value={slot.id}>
                                 {slot.slot_number} - {slot.slot_type} 
                                 {slot.floor && ` (Floor ${slot.floor})`}
-                                {slot.section && ` (${slot.section})`}
+                                {slot.section && ` - ${slot.section}`}
                             </option>
                         ))}
                     </select>
@@ -145,7 +147,7 @@ const vehicleform = () => {
                         disabled={loading}
                         className="flex-1"
                     >
-                        {loading ? "Parking..." : "Park Vehicle"}
+                        {loading ? "Processing..." : "Register Vehicle"}
                     </Button>
                     <Button 
                         type="button" 
@@ -158,7 +160,7 @@ const vehicleform = () => {
                         disabled={loading}
                         className="flex-1"
                     >
-                        Reset
+                        Clear
                     </Button>
                 </div>
             </form>
@@ -166,4 +168,4 @@ const vehicleform = () => {
     );
 };
 
-export default vehicleform;
+export default VehicleRegistration;
