@@ -61,23 +61,26 @@ export async function POST(request: Request) {
         const durationMinutes = Math.ceil((exitTime.getTime() - entryTime.getTime()) / (1000 * 60));
         const durationHours = durationMinutes / 60;
     
-        let billingAmount = 0;
-        if (durationHours <= 1) {
-            billingAmount = 50; 
-        } else if (durationHours <= 3) {
-            billingAmount = 100;
-        } else if (durationHours <= 6) {
-            billingAmount = 150; 
-        } else {
-            billingAmount = 200; 
+        let finalBill = 0;
+        if (session.billing_type === 'hourly') {
+            if (durationHours <= 1) {
+                finalBill = 50; 
+            } else if (durationHours <= 3) {
+                finalBill = 100;
+            } else if (durationHours <= 6) {
+                finalBill = 150; 
+            } else {
+                finalBill = 200; 
+            }
         }
+
         const { error: updateSessionError } = await supabase
             .from('parking_sessions')
             .update({
                 exit_time: exitTime.toISOString(),
                 status: 'completed',
                 duration_minutes: durationMinutes,
-                billing_amount: billingAmount,
+                final_bill: finalBill,
                 updated_at: new Date().toISOString()
             })
             .eq('id', session.id);
@@ -103,11 +106,11 @@ export async function POST(request: Request) {
                 ...session,
                 exit_time: exitTime.toISOString(),
                 duration_minutes: durationMinutes,
-                billing_amount: billingAmount
+                final_bill: finalBill
             },
             billing: {
                 duration_hours: Math.ceil(durationHours),
-                amount: billingAmount,
+                amount: finalBill,
                 currency: "INR"
             }
         });
