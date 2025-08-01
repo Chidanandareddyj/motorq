@@ -34,7 +34,7 @@ export function Navbar() {
               className="text-xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors duration-200"
               onClick={() => router.push("/")}
             >
-              MotorQ
+              Mall Parking System
             </div>
           </div>
 
