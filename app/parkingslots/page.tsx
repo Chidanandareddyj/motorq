@@ -27,6 +27,11 @@ interface Slot {
   status: SlotStatus;
   floor?: string;
   section?: string;
+  parking_sessions: {
+    vehicles: {
+      number_plate: string;
+    } | null
+  }[]
 }
 
 interface Stats {
@@ -132,7 +137,6 @@ const ParkingSlotsPage = () => {
   return (
     <div className="min-h-screen gradient-bg">
       <div className="container mx-auto p-6 space-y-8">
-        {/* Header */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-foreground mb-2">Parking Slots Management</h1>
           <p className="text-muted-foreground text-lg">
@@ -140,7 +144,6 @@ const ParkingSlotsPage = () => {
           </p>
         </div>
         
-        {/* Filters and Search */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="card-hover border-0 shadow-sm">
             <CardHeader>
@@ -187,7 +190,6 @@ const ParkingSlotsPage = () => {
           </Card>
         </div>
 
-        {/* Search Results */}
         {searchQuery && data?.occupiedSlotsData && (
           <Card className="card-hover border-0 shadow-sm">
             <CardHeader>
@@ -227,7 +229,6 @@ const ParkingSlotsPage = () => {
           </Card>
         )}
 
-        {/* Parking Slots Grid */}
         <Card className="card-hover border-0 shadow-sm">
           <CardHeader>
             <CardTitle>Parking Grid</CardTitle>
@@ -255,6 +256,12 @@ const ParkingSlotsPage = () => {
                   >
                     {slot.status}
                   </div>
+
+                  {slot.status === 'occupied' && slot.parking_sessions[0]?.vehicles?.number_plate && (
+                    <div className="text-xs font-mono text-blue-600 bg-blue-100 rounded-md px-2 py-1">
+                      {slot.parking_sessions[0].vehicles.number_plate}
+                    </div>
+                  )}
 
                   {slot.status !== "occupied" && (
                     <div className="mt-2 space-y-2">

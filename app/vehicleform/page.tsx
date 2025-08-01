@@ -99,7 +99,6 @@ const VehicleRegistration = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Registration Form */}
                     <div className="lg:col-span-2">
                         <Card className="card-hover border-0 shadow-sm">
                             <CardHeader className="pb-6">
@@ -110,7 +109,6 @@ const VehicleRegistration = () => {
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <form onSubmit={handleSubmit} className="space-y-6">
-                                    {/* License Plate */}
                                     <div className="space-y-2">
                                         <label htmlFor="numberPlate" className="text-sm font-medium text-foreground">
                                             License Plate Number *
@@ -131,7 +129,6 @@ const VehicleRegistration = () => {
                                         </p>
                                     </div>
 
-                                    {/* Vehicle Type Selection */}
                                     <div className="space-y-3">
                                         <label className="text-sm font-medium text-foreground">
                                             Vehicle Type *
@@ -171,7 +168,6 @@ const VehicleRegistration = () => {
                                         </div>
                                     </div>
 
-                                    {/* Slot Selection */}
                                     <div className="space-y-2">
                                         <label htmlFor="manualSlotId" className="text-sm font-medium text-foreground">
                                             Preferred Slot (Optional)
@@ -198,7 +194,6 @@ const VehicleRegistration = () => {
                                         </p>
                                     </div>
 
-                                    {/* Action Buttons */}
                                     <div className="flex flex-col sm:flex-row gap-3 pt-4">
                                         <Button 
                                             type="submit" 
@@ -236,7 +231,6 @@ const VehicleRegistration = () => {
                         </Card>
                     </div>
 
-                    {/* Available Slots Info */}
                     <div className="space-y-6">
                         <Card className="card-hover border-0 shadow-sm">
                             <CardHeader className="pb-4">
@@ -290,7 +284,6 @@ const VehicleRegistration = () => {
                             </CardContent>
                         </Card>
 
-                        {/* Quick Tips */}
                         <Card className="card-hover border-0 shadow-sm">
                             <CardHeader className="pb-4">
                                 <CardTitle className="text-lg font-semibold">Quick Tips</CardTitle>

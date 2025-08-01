@@ -6,7 +6,14 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const slotType = searchParams.get('type');
         const search = searchParams.get('search');
-        let query = supabase.from('parking_slots').select('*');
+        let query = supabase.from('parking_slots').select(`
+            *,
+            parking_sessions (
+                vehicles (
+                    number_plate
+                )
+            )
+        `);
         
         if(slotType && slotType !== 'all') {
             query = query.eq('slot_type', slotType);
@@ -39,16 +46,15 @@ export async function GET(request: Request) {
         const occupiedSlots = slots?.filter(slot => slot.status === 'occupied').length || 0;
         const maintenanceSlots = slots?.filter(slot => slot.status === 'maintenance').length || 0;
 
-        // Calculate revenue from completed parking sessions
         const { data: completedSessions, error: revenueError } = await supabase
             .from('parking_sessions')
-            .select('billing_amount')
+            .select('final_bill')
             .eq('status', 'completed');
 
         let totalRevenue = 0;
         if (!revenueError && completedSessions) {
             totalRevenue = completedSessions.reduce((sum, session) => {
-                return sum + (session.billing_amount || 0);
+                return sum + (session.final_bill || 0);
             }, 0);
         }
 

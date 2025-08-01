@@ -111,7 +111,6 @@ const ExitForm = () => {
                         </div>
                     </form>
 
-                    {/* Information Section */}
                     <div className="border-t pt-6 space-y-4">
                         <h3 className="font-semibold text-foreground flex items-center gap-2">
                             <AlertCircle className="h-5 w-5 text-blue-500" />

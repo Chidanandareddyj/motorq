@@ -26,7 +26,6 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container mx-auto px-4 lg:px-6">
         <nav className="flex h-16 items-center justify-between">
-          {/* Logo */}
           <div className="flex items-center space-x-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Car className="h-5 w-5" />
@@ -39,7 +38,6 @@ export function Navbar() {
             </div>
           </div>
 
-          {/* Desktop Navigation */}
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList className="flex space-x-1">
               {navigationItems.map((item) => {
@@ -63,7 +61,6 @@ export function Navbar() {
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* Mobile Menu Button */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">

@@ -16,10 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MotorQ Parking Management",
-  description: "Professional parking management system with real-time slot monitoring, vehicle registration, and automated billing",
-  keywords: "parking, management, vehicle, slots, billing, motorq",
-  authors: [{ name: "MotorQ Team" }],
+  title: "Motorq Parking Management",
+  authors: [{ name: "Chidananda Reddy Jonnala" }],
   viewport: "width=device-width, initial-scale=1",
 };
 

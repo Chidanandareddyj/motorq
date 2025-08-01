@@ -29,6 +29,18 @@ interface Slot {
   section?: string;
 }
 
+interface OverstayingVehicle {
+    id: string;
+    entry_time: string;
+    vehicles: {
+        number_plate: string;
+        vehicle_type: string;
+    };
+    parking_slots: {
+        slot_number: string;
+    };
+}
+
 interface Stats {
   totalSlots: number;
   availableSlots: number;
@@ -41,15 +53,25 @@ interface Stats {
 
 const Dashboard = () => {
   const [data, setData] = React.useState<Stats | null>(null);
+  const [overstaying, setOverstaying] = React.useState<OverstayingVehicle[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [exitNumberPlate, setExitNumberPlate] = React.useState<string>("");
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/dashboard`);
-      const dashboardData = await response.json();
+      const [dashboardRes, overstayRes] = await Promise.all([
+        fetch(`/api/dashboard`),
+        fetch(`/api/overstay`)
+      ]);
+      const dashboardData = await dashboardRes.json();
+      const overstayData = await overstayRes.json();
+      
       setData(dashboardData);
+      if (overstayData.overstayingVehicles) {
+        setOverstaying(overstayData.overstayingVehicles);
+      }
+
     } catch (err) {
       toast.error('Failed to load dashboard');
     } finally {
@@ -59,6 +81,8 @@ const Dashboard = () => {
 
   React.useEffect(() => {
     fetchDashboardData();
+    const interval = setInterval(fetchDashboardData, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleVehicleExit = async () => {
@@ -121,7 +145,6 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen gradient-bg">
       <div className="container mx-auto p-6 space-y-8">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-4xl font-bold text-foreground mb-2">Dashboard</h1>
@@ -135,7 +158,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="card-hover border-0 shadow-sm">
             <CardContent className="p-6">
@@ -210,7 +232,6 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="card-hover border-0 shadow-sm">
             <CardHeader className="pb-4">
@@ -295,7 +316,35 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Revenue and Quick Exit */}
+        {overstaying.length > 0 && (
+          <Card className="card-hover border-0 shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-semibold flex items-center gap-2 text-red-600">
+                <Clock className="h-5 w-5" />
+                Overstaying Vehicles
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Vehicles parked for more than 6 hours.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {overstaying.map(vehicle => (
+                  <div key={vehicle.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                    <div>
+                      <p className="font-mono font-bold text-red-800">{vehicle.vehicles.number_plate}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Slot {vehicle.parking_slots.slot_number} - Parked since {new Date(vehicle.entry_time).toLocaleString()}
+                      </p>
+                    </div>
+                    <Button variant="destructive" size="sm">Notify</Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2 card-hover border-0 shadow-sm">
             <CardHeader className="pb-4">
