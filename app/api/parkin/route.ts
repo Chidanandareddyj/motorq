@@ -1,7 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { NextResponse } from "next/server";
 
-// Slot assignment logic based on vehicle type
 const getCompatibleSlotTypes = (vehicleType: string): string[] => {
     switch(vehicleType) {
         case 'car':
@@ -17,14 +16,12 @@ const getCompatibleSlotTypes = (vehicleType: string): string[] => {
     }
 };
 
-// GET method to retrieve parking information or available slots
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const action = searchParams.get('action');
 
         if(action === 'available-slots') {
-            // Return available slots for manual assignment
             const { data: slots, error } = await supabase
                 .from('parking_slots')
                 .select('*')
@@ -53,14 +50,9 @@ export async function POST(request: Request) {
         if(!numberPlate || !vehicleType) {
             return NextResponse.json({ error: "Number plate and vehicle type are required" }, { status: 400 });
         }
-
-        // Validate vehicle type
         if(!['car', 'bike', 'ev', 'handicap'].includes(vehicleType)) {
             return NextResponse.json({ error: "Invalid vehicle type" }, { status: 400 });
         }
-
-        // Check if vehicle already has an active session
-        // First, get the vehicle ID if it exists
         const { data: vehicleRecord, error: vehicleCheckError } = await supabase
             .from('vehicles')
             .select('id')
@@ -68,11 +60,8 @@ export async function POST(request: Request) {
             .single();
 
         if(vehicleCheckError && vehicleCheckError.code !== 'PGRST116') {
-            // If error is NOT "no rows returned", it's a real error
             return NextResponse.json({ error: `Error checking vehicle: ${vehicleCheckError.message}` }, { status: 500 });
         }
-
-        // If vehicle exists, check for active sessions
         if(vehicleRecord) {
             const { data: existingSession, error: sessionCheckError } = await supabase
                 .from('parking_sessions')
@@ -89,8 +78,6 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: "Vehicle already has an active parking session" }, { status: 400 });
             }
         }
-
-        // Insert or get existing vehicle
         const { data: vehicle, error: vehicleError } = await supabase
             .from('vehicles')
             .upsert([
@@ -112,7 +99,6 @@ export async function POST(request: Request) {
         let assignedSlot;
 
         if (manualSlotId) {
-            // Manual slot assignment - check if slot is available
             const { data: slot, error: slotError } = await supabase
                 .from('parking_slots')
                 .select('*')
@@ -126,14 +112,11 @@ export async function POST(request: Request) {
 
             assignedSlot = slot;
         } else {
-            // Auto-assign slot based on vehicle type
             const compatibleSlotTypes = getCompatibleSlotTypes(vehicleType);
             
             if (compatibleSlotTypes.length === 0) {
                 return NextResponse.json({ error: "No compatible slot types found" }, { status: 400 });
             }
-
-            // Find the nearest available slot of compatible type
             const { data: availableSlots, error: slotsError } = await supabase
                 .from('parking_slots')
                 .select('*')
@@ -153,8 +136,6 @@ export async function POST(request: Request) {
             assignedSlot = availableSlots[0];
         }
 
-        // Start a transaction-like operation
-        // 1. Update slot status to occupied
         const { error: slotUpdateError } = await supabase
             .from('parking_slots')
             .update({ 
@@ -162,13 +143,12 @@ export async function POST(request: Request) {
                 updated_at: new Date().toISOString()
             })
             .eq('id', assignedSlot.id)
-            .eq('status', 'available'); // Ensure it's still available
+            .eq('status', 'available'); 
 
         if (slotUpdateError) {
             return NextResponse.json({ error: `Failed to assign slot: ${slotUpdateError.message}` }, { status: 500 });
         }
 
-        // 2. Create parking session
         const { data: parkingSession, error: sessionError } = await supabase
             .from('parking_sessions')
             .insert([
@@ -176,7 +156,7 @@ export async function POST(request: Request) {
                     vehicle_id: vehicle.id,
                     slot_id: assignedSlot.id,
                     status: 'active',
-                    billing_type: 'hourly', // Default to hourly
+                    billing_type: 'hourly', 
                     entry_time: new Date().toISOString()
                 }
             ])
@@ -188,7 +168,6 @@ export async function POST(request: Request) {
             .single();
 
         if (sessionError) {
-            // Rollback: Update slot status back to available
             await supabase
                 .from('parking_slots')
                 .update({ status: 'available' })

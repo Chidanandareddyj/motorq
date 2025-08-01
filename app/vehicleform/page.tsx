@@ -40,7 +40,6 @@ const VehicleRegistration = () => {
             toast.error('License plate and vehicle type required');
             return;
         }
-
         setLoading(true);
         
         try {
@@ -66,7 +65,7 @@ const VehicleRegistration = () => {
                 setNumberPlate("");
                 setVehicleType("");
                 setManualSlotId("");
-                fetchAvailableSlots(); // refresh available slots
+                fetchAvailableSlots(); 
             }
         } catch {
             toast.error('Network error. Please retry.');
@@ -90,7 +89,7 @@ const VehicleRegistration = () => {
                         id="numberPlate" 
                         value={numberPlate} 
                         onChange={(e) => setNumberPlate(e.target.value.toUpperCase())} 
-                        placeholder="ABC-1234" 
+                        placeholder="AP 39 AB 1234" 
                         required
                         disabled={loading}
                         className="w-full"

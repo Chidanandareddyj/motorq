@@ -10,22 +10,47 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Number plate or session ID is required" }, { status: 400 });
         }
 
-        let query = supabase
-            .from('parking_sessions')
-            .select(`
-                *,
-                vehicles(number_plate, vehicle_type),
-                parking_slots(id, slot_number, slot_type)
-            `)
-            .eq('status', 'active');
+        let session;
+        let sessionError;
 
         if(sessionId) {
-            query = query.eq('id', sessionId);
+            const { data, error } = await supabase
+                .from('parking_sessions')
+                .select(`
+                    *,
+                    vehicles(number_plate, vehicle_type),
+                    parking_slots(id, slot_number, slot_type)
+                `)
+                .eq('status', 'active')
+                .eq('id', sessionId)
+                .single();
+            
+            session = data;
+            sessionError = error;
         } else {
-            query = query.eq('vehicles.number_plate', numberPlate);
-        }
+            const { data: vehicle, error: vehicleError } = await supabase
+                .from('vehicles')
+                .select('id')
+                .eq('number_plate', numberPlate)
+                .single();
 
-        const { data: session, error: sessionError } = await query.single();
+            if(vehicleError || !vehicle) {
+                return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
+            }
+            const { data, error } = await supabase
+                .from('parking_sessions')
+                .select(`
+                    *,
+                    vehicles(number_plate, vehicle_type),
+                    parking_slots(id, slot_number, slot_type)
+                `)
+                .eq('status', 'active')
+                .eq('vehicle_id', vehicle.id)
+                .single();
+            
+            session = data;
+            sessionError = error;
+        }
 
         if(sessionError || !session) {
             return NextResponse.json({ error: "No active parking session found" }, { status: 404 });
@@ -34,13 +59,18 @@ export async function POST(request: Request) {
         const exitTime = new Date();
         const entryTime = new Date(session.entry_time);
         const durationMinutes = Math.ceil((exitTime.getTime() - entryTime.getTime()) / (1000 * 60));
-
-        // Calculate billing amount (simple hourly rate - $2 per hour, minimum 1 hour)
-        const hourlyRate = 2.0;
-        const billableHours = Math.max(1, Math.ceil(durationMinutes / 60));
-        const billingAmount = billableHours * hourlyRate;
-
-        // Update parking session
+        const durationHours = durationMinutes / 60;
+    
+        let billingAmount = 0;
+        if (durationHours <= 1) {
+            billingAmount = 50; 
+        } else if (durationHours <= 3) {
+            billingAmount = 100;
+        } else if (durationHours <= 6) {
+            billingAmount = 150; 
+        } else {
+            billingAmount = 200; 
+        }
         const { error: updateSessionError } = await supabase
             .from('parking_sessions')
             .update({
@@ -55,8 +85,6 @@ export async function POST(request: Request) {
         if (updateSessionError) {
             return NextResponse.json({ error: `Failed to update session: ${updateSessionError.message}` }, { status: 500 });
         }
-
-        // Update slot status to available
         const { error: slotUpdateError } = await supabase
             .from('parking_slots')
             .update({ 
@@ -78,9 +106,9 @@ export async function POST(request: Request) {
                 billing_amount: billingAmount
             },
             billing: {
-                duration_hours: Math.ceil(durationMinutes / 60),
+                duration_hours: Math.ceil(durationHours),
                 amount: billingAmount,
-                currency: "USD"
+                currency: "INR"
             }
         });
 

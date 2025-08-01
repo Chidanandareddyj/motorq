@@ -6,8 +6,6 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const slotType = searchParams.get('type');
         const search = searchParams.get('search');
-
-        // Build query based on filters
         let query = supabase.from('parking_slots').select('*');
         
         if(slotType && slotType !== 'all') {
@@ -19,8 +17,6 @@ export async function GET(request: Request) {
         if(slotsError) {
             return NextResponse.json({ error: slotsError.message }, { status: 500 });
         }
-
-        // Get occupied slots with vehicle info if search is provided
         let occupiedSlotsData = [];
         if(search) {
             const { data: sessions, error: sessionsError } = await supabase
@@ -43,11 +39,25 @@ export async function GET(request: Request) {
         const occupiedSlots = slots?.filter(slot => slot.status === 'occupied').length || 0;
         const maintenanceSlots = slots?.filter(slot => slot.status === 'maintenance').length || 0;
 
+        // Calculate revenue from completed parking sessions
+        const { data: completedSessions, error: revenueError } = await supabase
+            .from('parking_sessions')
+            .select('billing_amount')
+            .eq('status', 'completed');
+
+        let totalRevenue = 0;
+        if (!revenueError && completedSessions) {
+            totalRevenue = completedSessions.reduce((sum, session) => {
+                return sum + (session.billing_amount || 0);
+            }, 0);
+        }
+
         return NextResponse.json({
             totalSlots,
             availableSlots,
             occupiedSlots,
             maintenanceSlots,
+            totalRevenue,
             slots: slots || [],
             occupiedSlotsData: occupiedSlotsData || []
         });
@@ -56,7 +66,6 @@ export async function GET(request: Request) {
     }
 }
 
-// Update slot status (for maintenance mode)
 export async function PATCH(request: Request) {
     try {
         const body = await request.json();

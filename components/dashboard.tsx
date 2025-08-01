@@ -24,6 +24,7 @@ interface Stats {
   availableSlots: number;
   occupiedSlots: number;
   maintenanceSlots: number;
+  totalRevenue: number;
   slots: Slot[];
   occupiedSlotsData?: any[];
 }
@@ -31,18 +32,12 @@ interface Stats {
 const Dashboard = () => {
   const [data, setData] = React.useState<Stats | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [selectedType, setSelectedType] = React.useState<string>("all");
-  const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [exitNumberPlate, setExitNumberPlate] = React.useState<string>("");
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (selectedType !== "all") params.append("type", selectedType);
-      if (searchQuery) params.append("search", searchQuery);
-
-      const response = await fetch(`/api/dashboard?${params.toString()}`);
+      const response = await fetch(`/api/dashboard`);
       const dashboardData = await response.json();
       setData(dashboardData);
     } catch (err) {
@@ -54,32 +49,7 @@ const Dashboard = () => {
 
   React.useEffect(() => {
     fetchDashboardData();
-  }, [selectedType, searchQuery]);
-
-  const handleSlotStatusChange = async (slotId: string, newStatus: string) => {
-    try {
-      const response = await fetch("/api/dashboard", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          slotId,
-          status: newStatus,
-        }),
-      });
-
-      if (response.ok) {
-        fetchDashboardData();
-        toast.success(`Slot marked as ${newStatus}`);
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to update slot');
-      }
-    } catch {
-      toast.error('Network error occurred');
-    }
-  };
+  }, []);
 
   const handleVehicleExit = async () => {
     if(!exitNumberPlate.trim()) {
@@ -113,16 +83,14 @@ const Dashboard = () => {
       toast.error('Network error during checkout');
     }
   };
-
-  // Loading state - probably should be a spinner component
   if (loading) {
     return (
       <div className="p-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="h-8 bg-gray-200 w-1/4 mb-6"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-gray-200"></div>
             ))}
           </div>
         </div>
@@ -196,165 +164,28 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Controls section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Filter by Type</CardTitle>
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+        <Card className="transition-shadow duration-300">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl text-center text-black font-bold flex items-center justify-center gap-2">
+             
+              Total Revenue Generated
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full p-2 border rounded-md"
-              aria-label="Filter slots by type"
-            >
-              <option value="all">All Types</option>
-              <option value="regular">Car (Regular)</option>
-              <option value="compact">Car (Compact)</option>
-              <option value="bike">Bike</option>
-              <option value="ev">Electric Vehicle</option>
-              <option value="handicap">Handicap Accessible</option>
-            </select>
+          <CardContent className="flex justify-center pt-2">
+            <div className="text-center">
+              <div className="text-5xl font-bold text-gray mb-3 tracking-tight">
+                ₹{data?.totalRevenue?.toLocaleString() || '0'}
+              </div>
+              <div className="text-sm text-gray bg-gray px-3 py-1">
+                From completed parking sessions
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Search by Number Plate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Input
-              type="text"
-              placeholder="Enter number plate..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Vehicle Exit</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Input
-              type="text"
-              placeholder="Number plate to exit"
-              value={exitNumberPlate}
-              onChange={(e) => setExitNumberPlate(e.target.value.toUpperCase())}
-            />
-            <Button onClick={handleVehicleExit} className="w-full">
-              Checkout Vehicle
-            </Button>
-          </CardContent>
-        </Card>
+        
       </div>
-      {searchQuery &&
-        data?.occupiedSlotsData &&
-        data.occupiedSlotsData.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Search Results</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {data.occupiedSlotsData.map((session: any) => (
-                  <div
-                    key={session.id}
-                    className="p-3 border rounded-md bg-gray-50"
-                  >
-                    <div className="font-semibold">
-                      {session.vehicles.number_plate}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {session.vehicles.vehicle_type} • Slot{" "}
-                      {session.parking_slots.slot_number} (
-                      {session.parking_slots.slot_type})
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Parked: {new Date(session.entry_time).toLocaleString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Parking Slots</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {data?.slots?.map((slot) => (
-              <div
-                key={slot.id}
-                className={`p-3 rounded-md border-2 text-center ${
-                  slot.status === "available"
-                    ? "bg-green-50 border-green-200"
-                    : slot.status === "occupied"
-                    ? "bg-red-50 border-red-200"
-                    : "bg-orange-50 border-orange-200"
-                }`}
-              >
-                <div className="font-semibold">{slot.slot_number}</div>
-                <div className="text-xs text-gray-600 capitalize">
-                  {slot.slot_type}
-                </div>
-                {slot.floor && (
-                  <div className="text-xs text-gray-500">
-                    Floor {slot.floor}
-                  </div>
-                )}
-                {slot.section && (
-                  <div className="text-xs text-gray-500">{slot.section}</div>
-                )}
-                <div
-                  className={`text-xs font-medium mt-1 ${
-                    slot.status === "available"
-                      ? "text-green-600"
-                      : slot.status === "occupied"
-                      ? "text-red-600"
-                      : "text-orange-600"
-                  }`}
-                >
-                  {slot.status.toUpperCase()}
-                </div>
-                {slot.status !== "occupied" && (
-                  <div className="mt-2 space-y-1">
-                    {slot.status === "available" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          handleSlotStatusChange(slot.id, "maintenance")
-                        }
-                        className="w-full text-xs"
-                      >
-                        Mark Maintenance
-                      </Button>
-                    )}
-                    {slot.status === "maintenance" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          handleSlotStatusChange(slot.id, "available")
-                        }
-                        className="w-full text-xs"
-                      >
-                        Mark Available
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   </div>
   );

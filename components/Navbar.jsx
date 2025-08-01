@@ -17,6 +17,7 @@ export function Navbar() {
 
   const navigationItems = [
     { href: "/", label: "Dashboard" },
+    { href: "/parkingslots", label: "Parking Slots" },
     { href: "/vehicleform", label: "Park Vehicle" },
     { href: "/exit", label: "Exit Vehicle" },
   ];
@@ -36,7 +37,6 @@ export function Navbar() {
             </div>
           </div>
 
-          {/* Desktop Navigation */}
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList className="flex space-x-2">
               {navigationItems.map((item) => (

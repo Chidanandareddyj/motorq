@@ -74,9 +74,9 @@ const VehicleForm = () => {
           >
             <option value="">Choose type</option>
             <option value="car">Car</option>
-            <option value="bike">Motorcycle</option>
+            <option value="bike">Bike</option>
             <option value="ev">Electric Vehicle</option>
-            <option value="handicap">Accessible</option>
+            <option value="handicap">Handicapped</option>
           </select>
         </div>
         
