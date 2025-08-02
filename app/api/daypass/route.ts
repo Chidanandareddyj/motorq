@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { NextResponse } from "next/server";
+import { authenticate, authorization } from "@/lib/middleware";
 
 const getCompatibleSlotTypes = (vehicleType: string): string[] => {
     switch(vehicleType) {
@@ -16,7 +17,7 @@ const getCompatibleSlotTypes = (vehicleType: string): string[] => {
     }
 };
 
-export async function POST(request: Request) {
+export const POST = authenticate(authorization(['operator', 'admin'])(async (request: any) => {
     try {
         const body = await request.json();
         const { numberPlate, vehicleType, manualSlotId } = body;
@@ -166,4 +167,4 @@ export async function POST(request: Request) {
         console.error("Parking error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
-}
+}));

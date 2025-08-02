@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabaseClient";
 import { NextResponse } from "next/server";
+import { authenticate, authorization } from "@/lib/middleware";
 
-export async function POST(request: Request) {
+export const POST = authenticate(authorization(['operator', 'admin'])(async (request: any) => {
     try {
         const body = await request.json();
         const { numberPlate, sessionId } = body;
@@ -119,4 +120,4 @@ export async function POST(request: Request) {
         console.error("Checkout error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
-}
+}));

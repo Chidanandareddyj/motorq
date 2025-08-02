@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabaseClient";
 import { NextResponse } from "next/server";
+import { authenticate, authorization } from "@/lib/middleware";
 
-export async function GET(request: Request) {
+export const GET = authenticate(authorization(['admin'])(async (request: any) => {
     try {
         const { data: sessions, error } = await supabase
             .from('parking_sessions')
@@ -70,4 +71,4 @@ export async function GET(request: Request) {
         console.error("GET revenue error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
-}
+}));

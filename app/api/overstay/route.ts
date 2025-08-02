@@ -1,9 +1,10 @@
 import { supabase } from "@/lib/supabaseClient";
 import { NextResponse } from "next/server";
+import { authenticate, authorization } from "@/lib/middleware";
 
 const MAX_DURATION_HOURS = 6;
 
-export async function GET(request: Request) {
+export const GET = authenticate(authorization(['admin'])(async (request: any) => {
     try {
         const { data: activeSessions, error } = await supabase
             .from('parking_sessions')
@@ -31,4 +32,4 @@ export async function GET(request: Request) {
         console.error("GET overstay error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
-}
+}));

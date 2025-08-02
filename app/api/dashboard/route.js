@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import { NextResponse } from "next/server";
-
-export async function GET(request: Request) {
+import {authenticate,authorization } from "@/lib/middleware"
+export const GET = authenticate(authorization([ 'admin'])(async (request) => {
     try {
         const { searchParams } = new URL(request.url);
         const slotType = searchParams.get('type');
@@ -70,9 +70,9 @@ export async function GET(request: Request) {
     } catch (error) {
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
-}
+}));
 
-export async function PATCH(request: Request) {
+export  const  PATCH= authenticate(authorization(['admin'])(async(request)=> {
     try {
         const body = await request.json();
         const { slotId, status } = body;
@@ -102,4 +102,4 @@ export async function PATCH(request: Request) {
     } catch (error) {
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
-}
+}))

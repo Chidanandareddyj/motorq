@@ -1,7 +1,9 @@
 import { supabase } from "@/lib/supabaseClient";
 import { NextResponse } from "next/server";
 
-const getCompatibleSlotTypes = (vehicleType: string): string[] => {
+import {authenticate,authorization } from "@/lib/middleware"
+
+const getCompatibleSlotTypes = (vehicleType) => {
     switch(vehicleType) {
         case 'car':
             return ['regular', 'compact'];
@@ -16,7 +18,8 @@ const getCompatibleSlotTypes = (vehicleType: string): string[] => {
     }
 };
 
-export async function GET(request: Request) {
+
+export const GET = authenticate(authorization(['operator', 'admin'])(async (request) => {
     try {
         const { searchParams } = new URL(request.url);
         const action = searchParams.get('action');
@@ -40,9 +43,9 @@ export async function GET(request: Request) {
         console.error("GET parkin error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
-}
+}));
 
-export async function POST(request: Request) {
+export const PATCH = authenticate(authorization(['operator', 'admin'])(async (request) => {
     try {
         const body = await request.json();
         const { numberPlate, vehicleType, manualSlotId } = body;
@@ -191,4 +194,4 @@ export async function POST(request: Request) {
         console.error("Parking error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
-}
+}))
